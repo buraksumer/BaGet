@@ -172,6 +172,7 @@ else
                                 <th>Version</th>
                                 <th>Downloads</th>
                                 <th>Last updated</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody class="no-border">
@@ -180,10 +181,16 @@ else
                                 var version = Model.Versions[i];
                                 var alwaysShow = Json.Serialize(i < DefaultVisibleVersions);
 
-                                <tr class="@(version.Selected ? "bg-info" : "")" x-show="showAll || @alwaysShow">
+                                <tr class="@(version.Selected ? "bg-info" : "") version-row" x-show="showAll || @alwaysShow">
                                     <td><a asp-page="Package" asp-route-version="@version.Version">@version.Version.ToNormalizedString()</a></td>
                                     <td>@version.Downloads.ToString("N0")</td>
                                     <td>@version.LastUpdated.ToShortDateString()</td>
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-danger" 
+                                                onclick="window.baget.deletePackageVersion('@Model.Package.Id', '@version.Version.ToNormalizedString()')">
+                                            <i class="ms-Icon ms-Icon--Delete"></i> Delete
+                                        </button>
+                                    </td>
                                 </tr>
                             }
                         </tbody>
@@ -238,6 +245,13 @@ else
                     <li>
                         <i class="ms-Icon ms-Icon--CloudDownload"></i>
                         <a href="@Model.PackageDownloadUrl">Download package</a>
+                    </li>
+                    
+                    <li>
+                        <i class="ms-Icon ms-Icon--Delete" aria-hidden="true"></i>
+                        <a href="#" onclick="window.baget.deleteAllVersions('@Model.Package.Id'); return false;" style="color: #d9534f;">
+                            Delete all versions
+                        </a>
                     </li>
                 </ul>
             </div>
@@ -343,3 +357,55 @@ else
         </div>
     }
 }
+
+<!-- Delete Single Version Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Delete Package Version</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete package version <strong id="packageDeleteInfo"></strong>?</p>
+                <p class="text-warning"><strong>Warning:</strong> This action cannot be undone!</p>
+                <div class="form-group">
+                    <label for="apiKeyInput">API Key:</label>
+                    <input type="password" class="form-control" id="apiKeyInput" placeholder="Enter your API Key" required>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Delete Version</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete All Versions Modal -->
+<div class="modal fade" id="deleteAllModal" tabindex="-1" role="dialog" aria-labelledby="deleteAllModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteAllModalLabel">Delete All Package Versions</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete <strong id="packageDeleteAllInfo"></strong>?</p>
+                <p class="text-danger"><strong>Warning:</strong> This will delete ALL versions of this package and cannot be undone!</p>
+                <div class="form-group">
+                    <label for="apiKeyInputAll">API Key:</label>
+                    <input type="password" class="form-control" id="apiKeyInputAll" placeholder="Enter your API Key" required>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteAllBtn">Delete All Versions</button>
+            </div>
+        </div>
+    </div>
+</div>

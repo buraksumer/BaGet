@@ -218,6 +218,33 @@
         box-shadow: none;
     }
 
+    .api-key-input {
+        width: 300px;
+        max-width: 100%;
+        padding: 12px 16px;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        font-size: 14px;
+        margin-bottom: 8px;
+        transition: all 0.3s ease;
+        background: white;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .api-key-input:focus {
+        outline: none;
+        border-color: #007bff;
+        box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+    }
+
+    .api-key-label {
+        font-size: 12px;
+        color: #666;
+        text-align: center;
+        margin-bottom: 15px;
+        line-height: 1.4;
+    }
+
     .progress-bar {
         width: 100%;
         height: 4px;
@@ -364,6 +391,19 @@
                             .nupkg dosyanızı buraya sürükleyin veya dosya seçmek için tıklayın
                         </div>
                         
+                        <!-- API Key Input -->
+                        <div style="margin-bottom: 20px;">
+                            <input type="password" 
+                                   name="ApiKey" 
+                                   asp-for="ApiKey"
+                                   class="api-key-input"
+                                   placeholder="API Key giriniz" 
+                                   required />
+                            <div class="api-key-label">
+                                🔐 Paket yüklemek için geçerli bir API key gereklidir
+                            </div>
+                        </div>
+                        
                         <div class="file-input-wrapper">
                             <input type="file" 
                                    id="packageFile" 
@@ -404,38 +444,26 @@
                 {
                     var message = ViewData["UploadResult"].ToString();
                     var alertClass = "alert-info";
+                    var iconAndTitle = "ℹ️ Bilgi:";
                     
                     if (message.Contains("başarılı") || message.Contains("Success"))
                     {
                         alertClass = "alert-success";
+                        iconAndTitle = "✅ Başarılı!";
                     }
-                    else if (message.Contains("Hata") || message.Contains("Error") || message.Contains("Geçersiz"))
+                    else if (message.Contains("Hata") || message.Contains("Error") || message.Contains("Geçersiz") || message.Contains("gereklidir") || message.Contains("API Key"))
                     {
                         alertClass = "alert-error";
+                        iconAndTitle = "❌ Hata!";
                     }
-                    else if (message.Contains("mevcut") || message.Contains("exists"))
+                    else if (message.Contains("mevcut") || message.Contains("exists") || message.Contains("salt okunur"))
                     {
                         alertClass = "alert-warning";
+                        iconAndTitle = "⚠️ Uyarı!";
                     }
                     
                     <div class="alert-custom @alertClass" id="uploadAlert">
-                        @if (message.Contains("başarılı") || message.Contains("Success"))
-                        {
-                            <strong>✅ Başarılı!</strong>
-                        }
-                        else if (message.Contains("Hata") || message.Contains("Error"))
-                        {
-                            <strong>❌ Hata!</strong>
-                        }
-                        else if (message.Contains("mevcut") || message.Contains("exists"))
-                        {
-                            <strong>⚠️ Uyarı!</strong>
-                        }
-                        else
-                        {
-                            <strong>ℹ️ Bilgi:</strong>
-                        }
-                        @ViewData["UploadResult"]
+                        <strong>@iconAndTitle</strong> @ViewData["UploadResult"]
                     </div>
                 }
                 
@@ -489,8 +517,21 @@
     // Drag & Drop fonksiyonalitesi
     const uploadContainer = document.getElementById('uploadContainer');
     const fileInput = document.getElementById('packageFile');
+    const apiKeyInput = document.querySelector('input[name="ApiKey"]');
     const selectedFile = document.getElementById('selectedFile');
     const uploadBtn = document.getElementById('uploadBtn');
+
+    // Form validation
+    function validateForm() {
+        const hasFile = fileInput.files && fileInput.files.length > 0;
+        const hasApiKey = apiKeyInput && apiKeyInput.value.trim() !== '';
+        uploadBtn.disabled = !(hasFile && hasApiKey);
+    }
+
+    // API key input change event
+    if (apiKeyInput) {
+        apiKeyInput.addEventListener('input', validateForm);
+    }
 
     // Page load'da eğer upload result varsa alert'e scroll yap
     document.addEventListener('DOMContentLoaded', function() {
@@ -532,14 +573,14 @@
             document.getElementById('fileName').textContent = file.name;
             document.getElementById('fileSize').textContent = formatFileSize(file.size);
             selectedFile.classList.add('show');
-            uploadBtn.disabled = false;
+            validateForm();
         }
     }
 
     function clearFile() {
         fileInput.value = '';
         selectedFile.classList.remove('show');
-        uploadBtn.disabled = true;
+        validateForm();
     }
 
     function formatFileSize(bytes) {

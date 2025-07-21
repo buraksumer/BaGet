@@ -103,4 +103,150 @@
             }
         }
     };
+
+    // Package deletion functionality
+    baget.deletePackageVersion = function (packageId, version) {
+        var modal = document.getElementById('deleteModal');
+        var deleteButton = document.getElementById('confirmDeleteBtn');
+        var packageInfo = document.getElementById('packageDeleteInfo');
+        
+        // Set package info in modal
+        packageInfo.textContent = packageId + ' v' + version;
+        
+        // Clear any previous API key
+        document.getElementById('apiKeyInput').value = '';
+        
+        // Show modal
+        $('#deleteModal').modal('show');
+        
+        // Update delete button click handler
+        deleteButton.onclick = function() {
+            var apiKey = document.getElementById('apiKeyInput').value;
+            if (!apiKey) {
+                alert('API Key gereklidir!');
+                return;
+            }
+            
+            baget.performPackageDelete(packageId, version, apiKey);
+        };
+    };
+
+    baget.deleteAllVersions = function (packageId) {
+        var modal = document.getElementById('deleteAllModal');
+        var deleteButton = document.getElementById('confirmDeleteAllBtn');
+        var packageInfo = document.getElementById('packageDeleteAllInfo');
+        
+        // Set package info in modal
+        packageInfo.textContent = packageId + ' (tüm versiyonları)';
+        
+        // Clear any previous API key
+        document.getElementById('apiKeyInputAll').value = '';
+        
+        // Show modal
+        $('#deleteAllModal').modal('show');
+        
+        // Update delete button click handler
+        deleteButton.onclick = function() {
+            var apiKey = document.getElementById('apiKeyInputAll').value;
+            if (!apiKey) {
+                alert('API Key gereklidir!');
+                return;
+            }
+            
+            baget.performAllVersionsDelete(packageId, apiKey);
+        };
+    };
+
+    baget.performPackageDelete = function (packageId, version, apiKey) {
+        fetch('/api/v2/package/' + encodeURIComponent(packageId) + '/' + encodeURIComponent(version), {
+            method: 'DELETE',
+            headers: {
+                'X-NuGet-ApiKey': apiKey,
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                alert('Paket versiyonu başarıyla silindi!');
+                location.reload(); // Sayfayı yenile
+            } else if (response.status === 401) {
+                alert('Geçersiz API Key!');
+            } else if (response.status === 404) {
+                alert('Paket bulunamadı!');
+            } else {
+                alert('Silme işlemi başarısız oldu!');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Bir hata oluştu: ' + error.message);
+        })
+        .finally(() => {
+            $('#deleteModal').modal('hide');
+        });
+    };
+
+    baget.performAllVersionsDelete = function (packageId, apiKey) {
+        // Get all versions from the page
+        var versionRows = document.querySelectorAll('.version-row');
+        var versions = [];
+        
+        versionRows.forEach(row => {
+            var versionLink = row.querySelector('td:first-child a');
+            if (versionLink) {
+                var version = versionLink.textContent.trim();
+                versions.push(version);
+            }
+        });
+
+        if (versions.length === 0) {
+            alert('Silinecek versiyon bulunamadı!');
+            $('#deleteAllModal').modal('hide');
+            return;
+        }
+
+        var deletedCount = 0;
+        var totalCount = versions.length;
+        var errors = [];
+
+        function deleteNextVersion(index) {
+            if (index >= versions.length) {
+                // Tüm silme işlemleri tamamlandı
+                var message = totalCount + ' versiyondan ' + deletedCount + ' adeti başarıyla silindi.';
+                if (errors.length > 0) {
+                    message += '\nHatalar:\n' + errors.join('\n');
+                }
+                alert(message);
+                location.reload();
+                return;
+            }
+
+            var version = versions[index];
+            fetch('/api/v2/package/' + encodeURIComponent(packageId) + '/' + encodeURIComponent(version), {
+                method: 'DELETE',
+                headers: {
+                    'X-NuGet-ApiKey': apiKey,
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    deletedCount++;
+                } else {
+                    errors.push('v' + version + ': HTTP ' + response.status);
+                }
+            })
+            .catch(error => {
+                errors.push('v' + version + ': ' + error.message);
+            })
+            .finally(() => {
+                // Bir sonraki versiyonu sil
+                deleteNextVersion(index + 1);
+            });
+        }
+
+        // Silme işlemini başlat
+        deleteNextVersion(0);
+        $('#deleteAllModal').modal('hide');
+    };
 })();
