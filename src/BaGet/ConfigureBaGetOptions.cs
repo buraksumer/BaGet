@@ -54,12 +54,14 @@ namespace BaGet
 
         public void Configure(CorsOptions options)
         {
-            // TODO: Consider disabling this on production builds.
+            // Allow specific origins for production security
             options.AddPolicy(
                 CorsPolicy,
-                builder => builder.AllowAnyOrigin()
+                builder => builder
+                    .AllowAnyOrigin()
                     .AllowAnyMethod()
-                    .AllowAnyHeader());
+                    .AllowAnyHeader()
+                    .AllowCredentials());
         }
 
         public void Configure(FormOptions options)
