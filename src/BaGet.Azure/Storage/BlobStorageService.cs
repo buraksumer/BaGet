@@ -3,8 +3,8 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using BaGet.Core;
-using Microsoft.WindowsAzure.Storage;
-using Microsoft.WindowsAzure.Storage.Blob;
+using Microsoft.Azure.Storage;
+using Microsoft.Azure.Storage.Blob;
 
 namespace BaGet.Azure
 {
@@ -63,7 +63,7 @@ namespace BaGet.Azure
 
                 return StoragePutResult.Success;
             }
-            catch (StorageException e) when (e.IsAlreadyExistsException())
+            catch (Microsoft.Azure.Cosmos.Table.StorageException e) when (e.IsAlreadyExistsException())
             {
                 using (var targetStream = await blob.OpenReadAsync(cancellationToken))
                 {

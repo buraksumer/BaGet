@@ -15,7 +15,8 @@ namespace BaGet
             {
                 var databaseOptions = provider.GetRequiredService<IOptionsSnapshot<DatabaseOptions>>();
 
-                options.UseMySql(databaseOptions.Value.ConnectionString);
+                var serverVersion = ServerVersion.AutoDetect(databaseOptions.Value.ConnectionString);
+                options.UseMySql(databaseOptions.Value.ConnectionString, serverVersion);
             });
 
             return app;

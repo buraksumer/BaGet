@@ -15,7 +15,7 @@
   <!-- Compiler properties -->
   <PropertyGroup>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <LangVersion>7.2</LangVersion>
+    <LangVersion>latest</LangVersion>
 
     <!-- Don't warn if there are missing XMl comment for publicly visible type or member-->
     <NoWarn>$(NoWarn);1591</NoWarn>
@@ -37,10 +37,10 @@
 
   <!-- NuGet dependencies shared across projects -->
   <PropertyGroup>
-    <MicrosoftAspNetCorePackageVersion>3.1.18</MicrosoftAspNetCorePackageVersion>
-    <MicrosoftEntityFrameworkCorePackageVersion>3.1.18</MicrosoftEntityFrameworkCorePackageVersion>
-    <MicrosoftExtensionsPackageVersion>3.1.18</MicrosoftExtensionsPackageVersion>
-    <NuGetPackageVersion>5.10.0</NuGetPackageVersion>
+    <MicrosoftAspNetCorePackageVersion>9.0.0</MicrosoftAspNetCorePackageVersion>
+    <MicrosoftEntityFrameworkCorePackageVersion>9.0.0</MicrosoftEntityFrameworkCorePackageVersion>
+    <MicrosoftExtensionsPackageVersion>9.0.0</MicrosoftExtensionsPackageVersion>
+    <NuGetPackageVersion>6.10.1</NuGetPackageVersion>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(DOTNET_RUNNING_IN_CONTAINER)' == ''">
