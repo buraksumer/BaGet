@@ -1,4 +1,5 @@
-﻿@page
+@page
+@model BaGet.Web.UploadModel
 @inject IUrlGenerator _url
 
 @{
@@ -7,7 +8,310 @@
     var baseUrl = Url.PageLink("/Index");
     var publishUrl = _url.GetPackagePublishResourceUrl();
     var serviceIndexUrl = _url.GetServiceIndexUrl();
+    
+    // POST işlemi sonrası Web Yükle tabının aktif kalması için
+    var hasUploadResult = ViewData["UploadResult"] != null;
 }
+
+<style>
+    .upload-container {
+        background: #f8f9fa;
+        border: 2px dashed #dee2e6;
+        border-radius: 12px;
+        padding: 40px 20px;
+        text-align: center;
+        transition: all 0.3s ease;
+        position: relative;
+        margin: 20px 0;
+        max-width: 600px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .upload-container:hover {
+        border-color: #007bff;
+        background: #f0f8ff;
+    }
+
+    .upload-container.dragover {
+        border-color: #28a745;
+        background: #f0fff4;
+        transform: scale(1.01);
+    }
+
+    .upload-icon {
+        font-size: 36px;
+        color: #6c757d;
+        margin-bottom: 15px;
+        transition: color 0.3s ease;
+    }
+
+    .upload-container:hover .upload-icon {
+        color: #007bff;
+    }
+
+    .upload-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 8px;
+    }
+
+    .upload-subtitle {
+        font-size: 14px;
+        color: #6c757d;
+        margin-bottom: 25px;
+        line-height: 1.4;
+    }
+
+    .file-input-wrapper {
+        position: relative;
+        overflow: hidden;
+        display: inline-block;
+        margin-bottom: 20px;
+    }
+
+    .file-input-wrapper input[type=file] {
+        position: absolute;
+        left: -9999px;
+    }
+
+    .file-input-label {
+        background: #007bff;
+        color: white;
+        padding: 10px 25px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-weight: 500;
+        border: none;
+        display: inline-block;
+        font-size: 14px;
+    }
+
+    .file-input-label:hover {
+        background: #0056b3;
+        transform: translateY(-1px);
+        box-shadow: 0 3px 8px rgba(0, 123, 255, 0.3);
+    }
+
+    .selected-file {
+        background: #fff;
+        border: 1px solid #e3e6f0;
+        border-radius: 8px;
+        padding: 12px 15px;
+        margin: 15px auto 20px auto;
+        display: none;
+        max-width: 400px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .selected-file.show {
+        display: block;
+        animation: slideDown 0.3s ease;
+    }
+
+    @@keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .file-info {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+    }
+
+    .file-details {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex: 1;
+        min-width: 0;
+    }
+
+    .file-icon {
+        width: 32px;
+        height: 32px;
+        background: #28a745;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 14px;
+        font-weight: bold;
+        flex-shrink: 0;
+    }
+
+    .file-text {
+        min-width: 0;
+        flex: 1;
+    }
+
+    .file-name {
+        font-weight: 600;
+        color: #2d3748;
+        font-size: 14px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-bottom: 2px;
+    }
+
+    .file-size {
+        color: #718096;
+        font-size: 12px;
+    }
+
+    .remove-file-btn {
+        background: none;
+        border: none;
+        color: #e53e3e;
+        font-size: 16px;
+        cursor: pointer;
+        padding: 4px;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+        flex-shrink: 0;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .remove-file-btn:hover {
+        background: #fed7d7;
+        color: #c53030;
+    }
+
+    .upload-btn {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+        border: none;
+        padding: 11px 30px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 3px 10px rgba(40, 167, 69, 0.3);
+    }
+
+    .upload-btn:hover:not(:disabled) {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 15px rgba(40, 167, 69, 0.4);
+    }
+
+    .upload-btn:disabled {
+        background: #a0aec0;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+    }
+
+    .progress-bar {
+        width: 100%;
+        height: 4px;
+        background: #e2e8f0;
+        border-radius: 2px;
+        overflow: hidden;
+        margin: 15px 0;
+        display: none;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #007bff, #28a745);
+        width: 0%;
+        transition: width 0.3s ease;
+    }
+
+    .alert-custom {
+        border-radius: 8px;
+        padding: 12px 16px;
+        margin: 20px auto;
+        border: none;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        max-width: 600px;
+        font-size: 14px;
+        animation: fadeInUp 0.5s ease;
+    }
+
+    @@keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .alert-success {
+        background: linear-gradient(135deg, #d4edda, #c3e6cb);
+        color: #155724;
+        border-left: 4px solid #28a745;
+    }
+
+    .alert-info {
+        background: linear-gradient(135deg, #d1ecf1, #bee5eb);
+        color: #0c5460;
+        border-left: 4px solid #17a2b8;
+    }
+
+    .alert-warning {
+        background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+        color: #856404;
+        border-left: 4px solid #ffc107;
+    }
+
+    .alert-error {
+        background: linear-gradient(135deg, #f8d7da, #f1b0b7);
+        color: #721c24;
+        border-left: 4px solid #dc3545;
+    }
+
+    /* Responsive düzenlemeler */
+    @@media (max-width: 768px) {
+        .upload-container {
+            margin: 15px;
+            padding: 30px 15px;
+        }
+        
+        .selected-file {
+            margin: 15px;
+        }
+        
+        .file-name {
+            max-width: 180px;
+        }
+        
+        .alert-custom {
+            margin: 15px;
+        }
+    }
+
+    /* Tab'ları daha belirgin yap */
+    .nav li.active {
+        background-color: #007bff !important;
+        border-radius: 4px;
+    }
+
+    .nav li.active a {
+        color: white !important;
+        font-weight: bold;
+    }
+</style>
 
 <div class="col-sm-12">
     <h1>Upload</h1>
@@ -15,74 +319,254 @@
 
     <div>You can push packages using the service index <code>@serviceIndexUrl</code>.</div>
 
-    <div class="tabbed-info" x-data="{ tabs: tabs, active: tabs[0] }">
+    <div class="tabbed-info" x-data="{ 
+            tabs: tabs, 
+            active: @(hasUploadResult ? "tabs.find(t => t.name === 'Web Yükle')" : "tabs[0]")
+         }">
         <ul class="nav">
             <template x-for="tab in tabs" :key="tab.name">
-                <li x-bind:class="{ 'active': active.name === tab.name }">
-                    <a href="#" x-text="tab.name" @@click="active = tab"></a>
+                <li :class="{ 'active': active.name === tab.name }">
+                    <a href="#" x-text="tab.name" @@click.prevent="active = tab"></a>
                 </li>
             </template>
         </ul>
 
-        <div class="content">
-            <div class="script">
-                <template x-for="line in active.content">
-                    <div class="script-line" x-text="line"></div>
-                </template>
-            </div>
+        <div class="content" style="display: flex; flex-direction: column; gap: 10px;">
+            <!-- .NET CLI, NuGet vb. sekmeler için içerik -->
+            <div x-show="active.name !== 'Web Yükle'">
+                <div class="script">
+                    <template x-for="line in active.content">
+                        <div class="script-line" x-text="line"></div>
+                    </template>
+                </div>
 
-            <div class="copy-button">
-                <button class="btn btn-default btn-warning"
-                        type="button"
-                        data-tottle="popover"
-                        data-placement="bottom"
-                        data-content="Copied"
-                        @@click="window.baget.copyTextToClipboard(active.content.join('\n'), $el)">
-                    <i class="ms-Icon ms-Icon--Copy"></i>
-                </button>
+                <div class="copy-button">
+                    <button class="btn btn-default btn-warning"
+                            type="button"
+                            data-tottle="popover"
+                            data-placement="bottom"
+                            data-content="Copied"
+                            @@click="window.baget.copyTextToClipboard(active.content.join('\n'), $el)">
+                        <i class="ms-Icon ms-Icon--Copy"></i>
+                    </button>
+                </div>
             </div>
-        </div>
-
-        <div class="icon-text alert alert-warning">
-            For more information, please refer to
-            <a target="_blank"
-               rel="noopener noreferrer"
-               x-bind:href="active.documentation"
-               x-text="`${active.name}'s documentation`">
-            </a>.
+            
+            <!-- "Web Yükle" sekmesi -->
+            <div x-show="active.name === 'Web Yükle'">
+                <form method="post" enctype="multipart/form-data" id="uploadForm">
+                    @Html.AntiForgeryToken()
+                    
+                    <div class="upload-container" id="uploadContainer">
+                        <div class="upload-icon">📦</div>
+                        <div class="upload-title">NuGet Paketi Yükle</div>
+                        <div class="upload-subtitle">
+                            .nupkg dosyanızı buraya sürükleyin veya dosya seçmek için tıklayın
+                        </div>
+                        
+                        <div class="file-input-wrapper">
+                            <input type="file" 
+                                   id="packageFile" 
+                                   name="PackageFile" 
+                                   asp-for="PackageFile"
+                                   accept=".nupkg" 
+                                   required 
+                                   onchange="handleFileSelect(this)" />
+                            <label for="packageFile" class="file-input-label">
+                                📁 Dosya Seç
+                            </label>
+                            <button type="submit" class="upload-btn" id="uploadBtn" disabled>
+                                🚀 Paketi Yükle
+                            </button>
+                        </div>
+                        
+                        <div class="selected-file" id="selectedFile">
+                            <div class="file-info">
+                                <div class="file-details">
+                                    <div class="file-icon">📦</div>
+                                    <div class="file-text">
+                                        <div class="file-name" id="fileName"></div>
+                                        <div class="file-size" id="fileSize"></div>
+                                    </div>
+                                </div>
+                                <button type="button" class="remove-file-btn" onclick="clearFile()" title="Dosyayı kaldır">✕</button>
+                            </div>
+                        </div>
+                        
+                        
+                        <div class="progress-bar" id="progressBar">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
+                    </div>
+                </form>
+                
+                @if (ViewData["UploadResult"] != null)
+                {
+                    var message = ViewData["UploadResult"].ToString();
+                    var alertClass = "alert-info";
+                    
+                    if (message.Contains("başarılı") || message.Contains("Success"))
+                    {
+                        alertClass = "alert-success";
+                    }
+                    else if (message.Contains("Hata") || message.Contains("Error") || message.Contains("Geçersiz"))
+                    {
+                        alertClass = "alert-error";
+                    }
+                    else if (message.Contains("mevcut") || message.Contains("exists"))
+                    {
+                        alertClass = "alert-warning";
+                    }
+                    
+                    <div class="alert-custom @alertClass" id="uploadAlert">
+                        @if (message.Contains("başarılı") || message.Contains("Success"))
+                        {
+                            <strong>✅ Başarılı!</strong>
+                        }
+                        else if (message.Contains("Hata") || message.Contains("Error"))
+                        {
+                            <strong>❌ Hata!</strong>
+                        }
+                        else if (message.Contains("mevcut") || message.Contains("exists"))
+                        {
+                            <strong>⚠️ Uyarı!</strong>
+                        }
+                        else
+                        {
+                            <strong>ℹ️ Bilgi:</strong>
+                        }
+                        @ViewData["UploadResult"]
+                    </div>
+                }
+                
+                @if (ViewData["WorkingDirectory"] != null)
+                {
+                    <div class="alert-custom alert-info">
+                        <strong>📁 Çalışma Dizini:</strong> @ViewData["WorkingDirectory"]
+                    </div>
+                }
+            </div>
         </div>
     </div>
 </div>
 
-<script type="text/javascript">
+<script>
     let tabs = [
         {
             name: ".NET CLI",
             content: ["dotnet nuget push -s @serviceIndexUrl package.nupkg"],
-            documentation: "https://docs.microsoft.com/en-us/dotnet/core/tools/dotnet-nuget-push",
+            documentation:
+                "https://docs.microsoft.com/en-us/dotnet/core/tools/dotnet-nuget-push",
         },
-
         {
             name: "NuGet",
             content: ["nuget push -Source @serviceIndexUrl package.nupkg"],
-            documentation: "https://docs.microsoft.com/en-us/nuget/tools/cli-ref-push",
+            documentation:
+                "https://docs.microsoft.com/en-us/nuget/tools/cli-ref-push",
         },
-
         {
             name: "Paket",
             content: ["paket push --url @baseUrl package.nupkg"],
             documentation: "https://fsprojects.github.io/Paket/paket-push.html",
         },
-
-        // TODO: This is broken...
         {
             name: "PowerShellGet",
             content: [
                 "Register-PSRepository -Name \"BaGet\" -SourceLocation \"@serviceIndexUrl\" "
-                  + "-PublishLocation \"@publishUrl\" -InstallationPolicy \"Trusted\"",
-                "Publish-Module -Name PS-Module -Repository BaGet"
+                    + "-PublishLocation \"@publishUrl\" -InstallationPolicy \"Trusted\"",
+                "Publish-Module -Name PS-Module -Repository BaGet",
             ],
-            documentation: "https://docs.microsoft.com/en-us/powershell/module/powershellget/publish-module",
+            documentation:
+                "https://docs.microsoft.com/en-us/powershell/module/powershellget/publish-module",
+        },
+        {
+            name: "Web Yükle",
+            content: [],
+            documentation: "",
         },
     ];
+
+    // Drag & Drop fonksiyonalitesi
+    const uploadContainer = document.getElementById('uploadContainer');
+    const fileInput = document.getElementById('packageFile');
+    const selectedFile = document.getElementById('selectedFile');
+    const uploadBtn = document.getElementById('uploadBtn');
+
+    // Page load'da eğer upload result varsa alert'e scroll yap
+    document.addEventListener('DOMContentLoaded', function() {
+        const uploadAlert = document.getElementById('uploadAlert');
+        if (uploadAlert) {
+            setTimeout(() => {
+                uploadAlert.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'center' 
+                });
+            }, 500);
+        }
+    });
+
+    uploadContainer.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadContainer.classList.add('dragover');
+    });
+
+    uploadContainer.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        uploadContainer.classList.remove('dragover');
+    });
+
+    uploadContainer.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadContainer.classList.remove('dragover');
+        
+        const files = e.dataTransfer.files;
+        if (files.length > 0 && files[0].name.endsWith('.nupkg')) {
+            fileInput.files = files;
+            handleFileSelect(fileInput);
+        }
+    });
+
+    function handleFileSelect(input) {
+        const file = input.files[0];
+        if (file) {
+            document.getElementById('fileName').textContent = file.name;
+            document.getElementById('fileSize').textContent = formatFileSize(file.size);
+            selectedFile.classList.add('show');
+            uploadBtn.disabled = false;
+        }
+    }
+
+    function clearFile() {
+        fileInput.value = '';
+        selectedFile.classList.remove('show');
+        uploadBtn.disabled = true;
+    }
+
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    // Form gönderimi sırasında progress bar gösterme
+    document.getElementById('uploadForm').addEventListener('submit', function() {
+        const progressBar = document.getElementById('progressBar');
+        const progressFill = document.getElementById('progressFill');
+        
+        progressBar.style.display = 'block';
+        uploadBtn.disabled = true;
+        uploadBtn.textContent = '⏳ Yükleniyor...';
+        
+        let progress = 0;
+        const interval = setInterval(() => {
+            progress += Math.random() * 20;
+            if (progress >= 95) {
+                progress = 95;
+                clearInterval(interval);
+            }
+            progressFill.style.width = progress + '%';
+        }, 150);
+    });
 </script>
